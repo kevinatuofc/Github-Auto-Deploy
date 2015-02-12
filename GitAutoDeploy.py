@@ -44,11 +44,12 @@ class GitAutoDeploy(BaseHTTPRequestHandler):
         self.respond(204)
 
         urls = self.parseRequest()
-        for url in urls:
-            paths = self.getMatchingPaths(url)
-            for path in paths:
-                self.fetch(path)
-                self.deploy(path)
+        print urls
+        
+        paths = self.getAllPaths()
+        for path in paths:
+            self.fetch(path)
+            self.deploy(path)
 
     def parseRequest(self):
         length = int(self.headers.getheader('content-length'))
@@ -56,6 +57,13 @@ class GitAutoDeploy(BaseHTTPRequestHandler):
         payload = json.loads(body)
         self.branch = payload['ref']
         return [payload['repository']['url']]
+
+    def getAllPaths(self):
+        res = []
+        config = self.getConfig()
+        for repository in config['repositories']:
+            res.append(repository['path'])
+        return res
 
     def getMatchingPaths(self, repoUrl):
         res = []
@@ -74,7 +82,7 @@ class GitAutoDeploy(BaseHTTPRequestHandler):
         if(not self.quiet):
             print "\nPost push request received"
             print 'Updating ' + path
-        call(['cd "' + path + '" && git fetch'], shell=True)
+        call(['cd "' + path + '" && git pull'], shell=True)
 
     def deploy(self, path):
         config = self.getConfig()
